@@ -7,6 +7,7 @@ package seedu.addressbook;
  * ====================================================================
  */
 
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -19,9 +20,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Optional;
 
 /*
  * NOTE : =============================================================
@@ -266,7 +267,7 @@ public class AddressBook {
             setupGivenFileForStorage(args[0]);
         }
 
-        if(args.length == 0) {
+        if (args.length == 0) {
             setupDefaultFileForStorage();
         }
     }
@@ -277,14 +278,13 @@ public class AddressBook {
      * Exits if the file name is not acceptable.
      */
     private static void setupGivenFileForStorage(String filePath) {
-
-        if (!isValidFilePath(filePath)) {
+        if (isValidFilePath(filePath)) {
+            storageFilePath = filePath;
+            createFileIfMissing(filePath);
+        } else {
             showToUser(String.format(MESSAGE_INVALID_FILE, filePath));
             exitProgram();
         }
-
-        storageFilePath = filePath;
-        createFileIfMissing(filePath);
     }
 
     /**
@@ -420,14 +420,16 @@ public class AddressBook {
         final Optional<String[]> decodeResult = decodePersonFromString(commandArgs);
 
         // checks if args are valid (decode result will not be present if the person is invalid)
-        if (!decodeResult.isPresent()) {
+        if (decodeResult.isPresent()) {
+            // add the person as specified
+            final String[] personToAdd = decodeResult.get();
+            addPersonToAddressBook(personToAdd);
+            return getMessageForSuccessfulAddPerson(personToAdd);
+        } else {
             return getMessageForInvalidCommandInput(COMMAND_ADD_WORD, getUsageInfoForAddCommand());
         }
 
-        // add the person as specified
-        final String[] personToAdd = decodeResult.get();
-        addPersonToAddressBook(personToAdd);
-        return getMessageForSuccessfulAddPerson(personToAdd);
+
     }
 
     /**
@@ -478,19 +480,37 @@ public class AddressBook {
 
     /**
      * Retrieves all persons in the full model whose names contain some of the specified keywords.
+     * Keywords need not be case sensitive.
      *
      * @param keywords for searching
      * @return list of persons in full model with name containing some of the keywords
      */
     private static ArrayList<String[]> getPersonsWithNameContainingAnyKeyword(Collection<String> keywords) {
+        // lower case the keywords.
+        final Set<String> lowerCaseKeywords = lowerCaseAllKeywords(keywords);
         final ArrayList<String[]> matchedPersons = new ArrayList<>();
         for (String[] person : getAllPersonsInAddressBook()) {
-            final Set<String> wordsInName = new HashSet<>(splitByWhitespace(getNameFromPerson(person)));
-            if (!Collections.disjoint(wordsInName, keywords)) {
+            final Set<String> wordsInName = new HashSet<>(splitByWhitespace(getNameFromPerson(person).toLowerCase()));
+            if (!Collections.disjoint(wordsInName, lowerCaseKeywords)) {
                 matchedPersons.add(person);
             }
         }
         return matchedPersons;
+    }
+
+    /**
+     * Makes all keywords lower case.
+     *
+     * @param keywords words to be lower cased
+     * @return lower cased keywords
+     */
+    private static HashSet<String> lowerCaseAllKeywords(Collection<String> keywords) {
+        final HashSet<String> lowerCaseKeywords = new HashSet<>();
+        // Lower case key words.
+        for(String name: keywords) {
+            lowerCaseKeywords.add(name.toLowerCase());
+        }
+        return lowerCaseKeywords;
     }
 
     /**
